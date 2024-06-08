@@ -4,6 +4,7 @@ import time
 import requests
 import humanize
 import concurrent.futures
+import subprocess
 
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
@@ -105,3 +106,4 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
 driver.quit()
 
 print('所有壁纸已下载完成！')
+subprocess.run(['python', 'delete_little_error.py'])

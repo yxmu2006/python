@@ -3,6 +3,7 @@ import re
 import requests
 import humanize
 import concurrent.futures
+import subprocess
 
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
@@ -22,7 +23,7 @@ def check_4k_resolution(url):
 def adjust_image_url(url):
         url = url[:url.rindex('-')] + '-3840x2160-' + url[url.rindex('-') + 1:]
         url = url.replace('.html', '.jpg')
-        url = url.replace('movies', 'images/wallpapers')
+        url = url.replace('black-dark', 'images/wallpapers')
         return url
 
 
@@ -42,7 +43,7 @@ def get_movie_wallpapers(start_page, end_page):
 
     try:
         for page in range(start_page, end_page + 1):
-            url = f'https://4kwallpapers.com/movies/?page={page}'
+            url = f'https://4kwallpapers.com/black-dark/?page={page}'
             print(f"Processing page {page}...")
             driver.get(url)
 
@@ -63,7 +64,7 @@ def get_movie_wallpapers(start_page, end_page):
                     download_url = adjust_image_url(link['href'])
                     if not download_url.startswith('http'):
                         download_url = 'https://4kwallpapers.com' + download_url
-                    filename = os.path.join('F:\\4k桌面\\NEW', os.path.basename(download_url))
+                    filename = os.path.join('F:\\4k桌面\\black', os.path.basename(download_url))
                     if not os.path.exists(filename):
                         print(f"Downloading: {filename}...")
 
@@ -79,6 +80,7 @@ def get_movie_wallpapers(start_page, end_page):
     finally:
             driver.quit()
 
-get_movie_wallpapers(1, 54)
-print('All movie wallpapers links printed!')
+get_movie_wallpapers(1, 74)
+print('All balck wallpapers links printed!')
+subprocess.run(['python', 'delete_little_error.py'])
 

@@ -1,7 +1,7 @@
 import os
 
 # Set the directory path and the file size threshold (50 KB)
-dir_path = 'F:\\4k桌面\\Game'
+dir_path = 'F:\\4k桌面\\black'
 size_threshold = 50000  # 50 KB
 
 # Get a list of files in the directory

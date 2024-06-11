@@ -23,4 +23,4 @@ def new_func(dir_path, min_brightness_threshold, del_dir):
                 print(f"Failed to open {file}: {str(e)}")
 
 new_func(dir_path, min_brightness_threshold, del_dir)
-print("Done.test11")
+print("test1")

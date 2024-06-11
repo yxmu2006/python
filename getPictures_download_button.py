@@ -62,10 +62,10 @@ except WebDriverException as e:
 # 打开目标网页
 
 # 等待页面加载
-wait = WebDriverWait(driver, 250)
+wait = WebDriverWait(driver, 30)
 
 # 点击“Load More”按钮10次，每次延迟1秒
-for _ in range(500):
+for _ in range(30):
     try:
         load_more_button = wait.until(EC.element_to_be_clickable((By.ID, 'load-more-button')))
         ActionChains(driver).move_to_element(load_more_button).click(load_more_button).perform()
@@ -89,7 +89,7 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
         download_url = adjust_image_url(link['href'])
         if not download_url.startswith('http'):
             download_url = 'https://4kwallpapers.com' + download_url
-        filename = os.path.join('F:\\4k桌面\\wallpapers', os.path.basename(download_url))
+        filename = os.path.join('d:\\wallpapers', os.path.basename(download_url))
         if not os.path.exists(filename):
             print(f"Downloading: {filename}...")
 

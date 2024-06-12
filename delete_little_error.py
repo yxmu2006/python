@@ -14,4 +14,4 @@ for file in files:
         os.remove(os.path.join(dir_path, file))
         print(f"Deleted {file}")
 
-print("Done!")
+print("Done!1")

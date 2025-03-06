@@ -2,28 +2,38 @@ import pygame
 import sys
 import random
 
-# Initialize PyGame
+# 初始化 PyGame
 pygame.init()
 
-# Set window size to 720x600
+# 设置窗口大小
 SCREEN_WIDTH, SCREEN_HEIGHT = 1024, 720
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 pygame.display.set_caption('Two Snake Game')
 
-# Color definitions
+# 颜色定义
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
-GREY = (128, 128, 128)
 GREEN = (0, 255, 0)
 RED = (255, 0, 0)
 BLUE = (0, 0, 255)
 
-# Initial position and size of snake and food
+# 蛇和食物的大小及初始参数
 snake_block_size = 20
 initial_snake_length = 5
 initial_snake_speed = 8
 
-# Generate random initial positions for two snakes in left and right areas
+# 全局变量
+snake1_pos = []
+snake2_pos = []
+food_pos = []
+snake1_direction = ''
+snake2_direction = ''
+food_spawn = True
+game_over = False
+snake1_speed = initial_snake_speed
+snake2_speed = initial_snake_speed
+
+# 生成随机初始蛇位置
 def generate_random_snake_pos(side):
     if side == 'left':
         start_x = random.randrange(1, (SCREEN_WIDTH // 2 // snake_block_size)) * snake_block_size
@@ -46,208 +56,157 @@ def generate_random_snake_pos(side):
             snake_pos.append([start_x - i * snake_block_size, start_y])
     return snake_pos
 
-snake1_pos = generate_random_snake_pos('left')
-snake2_pos = generate_random_snake_pos('right')
-
-snake1_speed = initial_snake_speed
-snake2_speed = initial_snake_speed
-food_pos = [random.randrange(1, (SCREEN_WIDTH // snake_block_size)) * snake_block_size, random.randrange(1, (SCREEN_HEIGHT // snake_block_size)) * snake_block_size]
-food_spawn = True
-
+# 重置游戏函数
 def reset_game():
     global snake1_pos, snake2_pos, snake1_direction, snake2_direction, food_pos, food_spawn, game_over, snake1_speed, snake2_speed
     snake1_pos = generate_random_snake_pos('left')
     snake2_pos = generate_random_snake_pos('right')
     snake1_direction = random.choice(['UP', 'DOWN', 'LEFT', 'RIGHT'])
     snake2_direction = random.choice(['UP', 'DOWN', 'LEFT', 'RIGHT'])
-    food_pos = [random.randrange(1, (SCREEN_WIDTH // snake_block_size)) * snake_block_size, random.randrange(1, (SCREEN_HEIGHT // snake_block_size)) * snake_block_size]
+    while True:
+        food_pos = [random.randrange(1, (SCREEN_WIDTH // snake_block_size)) * snake_block_size, 
+                    random.randrange(1, (SCREEN_HEIGHT // snake_block_size)) * snake_block_size]
+        if food_pos not in snake1_pos and food_pos not in snake2_pos:
+            break
     food_spawn = True
     game_over = False
     snake1_speed = initial_snake_speed
     snake2_speed = initial_snake_speed
 
-# 智能移动函数，增加避开另一条蛇、自己和边缘的逻辑
-def intelligent_move(snake_pos, direction, food_pos, other_snake_pos, other_snake_direction):
+# 改进的智能移动函数
+def intelligent_move(snake_pos, direction, food_pos, other_snake_pos):
     head_x, head_y = snake_pos[0]
     food_x, food_y = food_pos
-    possible_directions = []
-
+    
+    # 计算所有可能的新位置
     new_positions = {
         'UP': [head_x, head_y - snake_block_size],
         'DOWN': [head_x, head_y + snake_block_size],
         'LEFT': [head_x - snake_block_size, head_y],
         'RIGHT': [head_x + snake_block_size, head_y]
     }
-
-    other_head_x, other_head_y = other_snake_pos[0]
-    if other_snake_direction == 'UP':
-        other_next_pos = [other_head_x, other_head_y - snake_block_size]
-    elif other_snake_direction == 'DOWN':
-        other_next_pos = [other_head_x, other_head_y + snake_block_size]
-    elif other_snake_direction == 'LEFT':
-        other_next_pos = [other_head_x - snake_block_size, other_head_y]
-    elif other_snake_direction == 'RIGHT':
-        other_next_pos = [other_head_x + snake_block_size, other_head_y]
-
-    my_distance = abs(head_x - food_x) + abs(head_y - food_y)
-    other_distance = abs(other_head_x - food_x) + abs(other_head_y - food_y)
-
-    if my_distance > other_distance:
-        # 修改后的边界检查逻辑
-        if head_x < SCREEN_WIDTH // 2 and direction != 'LEFT':
-            if (new_positions['RIGHT'][0] + snake_block_size <= SCREEN_WIDTH and
-                new_positions['RIGHT'] not in other_snake_pos and
-                new_positions['RIGHT'] != other_next_pos and
-                new_positions['RIGHT'] not in snake_pos[1:]):
-                possible_directions.append('RIGHT')
-        elif head_x > SCREEN_WIDTH // 2 and direction != 'RIGHT':
-            if (new_positions['LEFT'][0] >= 0 and
-                new_positions['LEFT'] not in other_snake_pos and
-                new_positions['LEFT'] != other_next_pos and
-                new_positions['LEFT'] not in snake_pos[1:]):
-                possible_directions.append('LEFT')
-        if not possible_directions:
-            if head_y < SCREEN_HEIGHT // 2 and direction != 'UP':
-                if (new_positions['DOWN'][1] + snake_block_size <= SCREEN_HEIGHT and
-                    new_positions['DOWN'] not in other_snake_pos and
-                    new_positions['DOWN'] != other_next_pos and
-                    new_positions['DOWN'] not in snake_pos[1:]):
-                    possible_directions.append('DOWN')
-            elif head_y > SCREEN_HEIGHT // 2 and direction != 'DOWN':
-                if (new_positions['UP'][1] >= 0 and
-                    new_positions['UP'] not in other_snake_pos and
-                    new_positions['UP'] != other_next_pos and
-                    new_positions['UP'] not in snake_pos[1:]):
-                    possible_directions.append('UP')
-    else:
-        # 正常追食物时的修改
-        if head_x < food_x and direction != 'LEFT':
-            if (new_positions['RIGHT'][0] + snake_block_size <= SCREEN_WIDTH and
-                new_positions['RIGHT'] not in other_snake_pos and
-                new_positions['RIGHT'] != other_next_pos and
-                new_positions['RIGHT'] not in snake_pos[1:]):
-                possible_directions.append('RIGHT')
-        if head_x > food_x and direction != 'RIGHT':
-            if (new_positions['LEFT'][0] >= 0 and
-                new_positions['LEFT'] not in other_snake_pos and
-                new_positions['LEFT'] != other_next_pos and
-                new_positions['LEFT'] not in snake_pos[1:]):
-                possible_directions.append('LEFT')
-        if head_y < food_y and direction != 'UP':
-            if (new_positions['DOWN'][1] + snake_block_size <= SCREEN_HEIGHT and
-                new_positions['DOWN'] not in other_snake_pos and
-                new_positions['DOWN'] != other_next_pos and
-                new_positions['DOWN'] not in snake_pos[1:]):
-                possible_directions.append('DOWN')
-        if head_y > food_y and direction != 'DOWN':
-            if (new_positions['UP'][1] >= 0 and
-                new_positions['UP'] not in other_snake_pos and
-                new_positions['UP'] != other_next_pos and
-                new_positions['UP'] not in snake_pos[1:]):
-                possible_directions.append('UP')
-
-    if possible_directions:
-        return random.choice(possible_directions)
+    
+    # 首先确定安全方向
+    safe_directions = []
+    for d in ['UP', 'DOWN', 'LEFT', 'RIGHT']:
+        new_pos = new_positions[d]
+        if (0 <= new_pos[0] < SCREEN_WIDTH and 
+            0 <= new_pos[1] < SCREEN_HEIGHT and
+            new_pos not in snake_pos[1:] and 
+            new_pos not in other_snake_pos):
+            safe_directions.append(d)
+    
+    # 如果有安全方向，则从中选择最佳方向
+    if safe_directions:
+        best_direction = None
+        min_distance = float('inf')
+        for d in safe_directions:
+            new_pos = new_positions[d]
+            distance = abs(new_pos[0] - food_x) + abs(new_pos[1] - food_y)
+            if distance < min_distance:
+                min_distance = distance
+                best_direction = d
+        return best_direction if best_direction else random.choice(safe_directions)
+    # 如果没有安全方向，保持当前方向
     return direction
 
+# 主游戏循环
 def main():
-    global food_spawn, food_pos, game_over, snake1_speed, snake2_speed
-    snake1_direction = random.choice(['UP', 'DOWN', 'LEFT', 'RIGHT'])
-    snake2_direction = random.choice(['UP', 'DOWN', 'LEFT', 'RIGHT'])
+    global food_pos, snake1_pos, snake2_pos, snake1_direction, snake2_direction, food_spawn, game_over, snake1_speed, snake2_speed
+    reset_game()  # 确保游戏开始时重置所有变量
     clock = pygame.time.Clock()
-    game_over = False
 
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
-            elif event.type == pygame.KEYDOWN:
-                if game_over:
-                    if event.key == pygame.K_RETURN:
-                        reset_game()
-                    elif event.key == pygame.K_ESCAPE:
-                        pygame.quit()
-                        sys.exit()
+            elif event.type == pygame.KEYDOWN and game_over:
+                if event.key == pygame.K_RETURN:
+                    reset_game()
+                elif event.key == pygame.K_ESCAPE:
+                    pygame.quit()
+                    sys.exit()
 
         if not game_over:
-            # 智能决定蛇的移动方向
-            snake1_direction = intelligent_move(snake1_pos, snake1_direction, food_pos, snake2_pos, snake2_direction)
-            snake2_direction = intelligent_move(snake2_pos, snake2_direction, food_pos, snake1_pos, snake2_direction)
+            # AI控制移动
+            snake1_direction = intelligent_move(snake1_pos, snake1_direction, food_pos, snake2_pos)
+            snake2_direction = intelligent_move(snake2_pos, snake2_direction, food_pos, snake1_pos)
 
-            # Move snake 1 based on the current direction
+            # 计算新头部位置
+            new_head1 = list(snake1_pos[0])
             if snake1_direction == 'UP':
-                new_head1 = [snake1_pos[0][0], snake1_pos[0][1] - snake_block_size]
+                new_head1[1] -= snake_block_size
             elif snake1_direction == 'DOWN':
-                new_head1 = [snake1_pos[0][0], snake1_pos[0][1] + snake_block_size]
+                new_head1[1] += snake_block_size
             elif snake1_direction == 'LEFT':
-                new_head1 = [snake1_pos[0][0] - snake_block_size, snake1_pos[0][1]]
+                new_head1[0] -= snake_block_size
             elif snake1_direction == 'RIGHT':
-                new_head1 = [snake1_pos[0][0] + snake_block_size, snake1_pos[0][1]]
+                new_head1[0] += snake_block_size
 
-            # Move snake 2 based on the current direction
+            new_head2 = list(snake2_pos[0])
             if snake2_direction == 'UP':
-                new_head2 = [snake2_pos[0][0], snake2_pos[0][1] - snake_block_size]
+                new_head2[1] -= snake_block_size
             elif snake2_direction == 'DOWN':
-                new_head2 = [snake2_pos[0][0], snake2_pos[0][1] + snake_block_size]
+                new_head2[1] += snake_block_size
             elif snake2_direction == 'LEFT':
-                new_head2 = [snake2_pos[0][0] - snake_block_size, snake2_pos[0][1]]
+                new_head2[0] -= snake_block_size
             elif snake2_direction == 'RIGHT':
-                new_head2 = [snake2_pos[0][0] + snake_block_size, snake2_pos[0][1]]
+                new_head2[0] += snake_block_size
 
-            # Check if snake 1 has eaten the food
+            # 检查是否吃到食物
             snake1_rect = pygame.Rect(new_head1[0], new_head1[1], snake_block_size, snake_block_size)
+            snake2_rect = pygame.Rect(new_head2[0], new_head2[1], snake_block_size, snake_block_size)
             food_rect = pygame.Rect(food_pos[0], food_pos[1], snake_block_size, snake_block_size)
+
             if snake1_rect.colliderect(food_rect):
                 food_spawn = False
-                snake1_speed += 1  # Increase speed when the snake eats food
+                snake1_speed += 1
             else:
-                snake1_pos.pop()  # Remove the last part of the snake unless it's eaten food
-
+                snake1_pos.pop()
             snake1_pos.insert(0, new_head1)
 
-            # Check if snake 2 has eaten the food
-            snake2_rect = pygame.Rect(new_head2[0], new_head2[1], snake_block_size, snake_block_size)
             if snake2_rect.colliderect(food_rect):
                 food_spawn = False
-                snake2_speed += 1  # Increase speed when the snake eats food
+                snake2_speed += 1
             else:
-                snake2_pos.pop()  # Remove the last part of the snake unless it's eaten food
-
+                snake2_pos.pop()
             snake2_pos.insert(0, new_head2)
 
-            # Spawn new food if necessary
+            # 生成新食物，确保不与蛇身重叠
             if not food_spawn:
-                food_pos = [random.randrange(1, (SCREEN_WIDTH // snake_block_size)) * snake_block_size, random.randrange(1, (SCREEN_HEIGHT // snake_block_size)) * snake_block_size]
+                while True:
+                    food_pos = [random.randrange(1, (SCREEN_WIDTH // snake_block_size)) * snake_block_size, 
+                                random.randrange(1, (SCREEN_HEIGHT // snake_block_size)) * snake_block_size]
+                    if food_pos not in snake1_pos and food_pos not in snake2_pos:
+                        break
                 food_spawn = True
 
-            # Check for collision with the window edges
-            if snake1_pos[0][0] < 0 or snake1_pos[0][0] >= SCREEN_WIDTH or snake1_pos[0][1] < 0 or snake1_pos[0][1] >= SCREEN_HEIGHT:
+            # 检查碰撞
+            if (snake1_pos[0][0] < 0 or snake1_pos[0][0] >= SCREEN_WIDTH or 
+                snake1_pos[0][1] < 0 or snake1_pos[0][1] >= SCREEN_HEIGHT or 
+                new_head1 in snake1_pos[1:]):
                 game_over = True
                 winner = 2
-            if snake2_pos[0][0] < 0 or snake2_pos[0][0] >= SCREEN_WIDTH or snake2_pos[0][1] < 0 or snake2_pos[0][1] >= SCREEN_HEIGHT:
+            if (snake2_pos[0][0] < 0 or snake2_pos[0][0] >= SCREEN_WIDTH or 
+                snake2_pos[0][1] < 0 or snake2_pos[0][1] >= SCREEN_HEIGHT or 
+                new_head2 in snake2_pos[1:]):
                 game_over = True
                 winner = 1
 
-            # Check for collision with itself
-            if new_head1 in snake1_pos[1:]:
+            # 检查蛇之间的碰撞，包括头对头
+            if new_head1 in snake2_pos or new_head2 in snake1_pos or new_head1 == new_head2:
                 game_over = True
-                winner = 2
-            if new_head2 in snake2_pos[1:]:
-                game_over = True
-                winner = 1
-
-            # Check for collision between snakes
-            if new_head1 in snake2_pos or new_head2 in snake1_pos:
-                game_over = True
-                if len(snake1_pos) > len(snake2_pos):
+                if new_head1 == new_head2:
+                    winner = 0  # 头对头碰撞，平局
+                elif len(snake1_pos) > len(snake2_pos):
                     winner = 1
                 elif len(snake2_pos) > len(snake1_pos):
                     winner = 2
                 else:
-                    winner = 0  # Tie
+                    winner = 0
 
-            # Draw the game screen
+            # 绘制游戏画面
             screen.fill(BLACK)
             for pos in snake1_pos:
                 pygame.draw.rect(screen, GREEN, pygame.Rect(pos[0], pos[1], snake_block_size, snake_block_size))
@@ -255,7 +214,7 @@ def main():
                 pygame.draw.rect(screen, BLUE, pygame.Rect(pos[0], pos[1], snake_block_size, snake_block_size))
             pygame.draw.rect(screen, RED, pygame.Rect(food_pos[0], food_pos[1], snake_block_size, snake_block_size))
 
-            # Display snake lengths at the top center
+            # 显示蛇的长度
             font = pygame.font.Font(None, 36)
             length_text1 = font.render(f'Snake 1 Length: {len(snake1_pos)}', 1, WHITE)
             length_text2 = font.render(f'Snake 2 Length: {len(snake2_pos)}', 1, WHITE)
@@ -265,10 +224,8 @@ def main():
         else:
             screen.fill(BLACK)
             font = pygame.font.Font(None, 36)
-            if winner == 0:
-                text_lines = ["Game Over! It's a Tie!", "Press Enter to Restart or Esc to Quit."]
-            else:
-                text_lines = [f"Game Over! Snake {winner} Wins!", "Press Enter to Restart or Esc to Quit."]
+            text_lines = ["Game Over! It's a Tie!", "Press Enter to Restart or Esc to Quit."] if winner == 0 else \
+                         [f"Game Over! Snake {winner} Wins!", "Press Enter to Restart or Esc to Quit."]
             for i, line in enumerate(text_lines):
                 text = font.render(line, 1, WHITE)
                 screen.blit(text, (SCREEN_WIDTH // 2 - text.get_width() // 2, SCREEN_HEIGHT // 2 - text.get_height() // 2 + i * 40))

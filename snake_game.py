@@ -72,7 +72,6 @@ def intelligent_move(snake_pos, direction, food_pos, other_snake_pos, other_snak
     food_x, food_y = food_pos
     possible_directions = []
 
-    # 计算各个方向的新位置
     new_positions = {
         'UP': [head_x, head_y - snake_block_size],
         'DOWN': [head_x, head_y + snake_block_size],
@@ -80,7 +79,6 @@ def intelligent_move(snake_pos, direction, food_pos, other_snake_pos, other_snak
         'RIGHT': [head_x + snake_block_size, head_y]
     }
 
-    # 预测另一条蛇下一个可能的位置
     other_head_x, other_head_y = other_snake_pos[0]
     if other_snake_direction == 'UP':
         other_next_pos = [other_head_x, other_head_y - snake_block_size]
@@ -91,72 +89,61 @@ def intelligent_move(snake_pos, direction, food_pos, other_snake_pos, other_snak
     elif other_snake_direction == 'RIGHT':
         other_next_pos = [other_head_x + snake_block_size, other_head_y]
 
-    # 计算到食物的曼哈顿距离
     my_distance = abs(head_x - food_x) + abs(head_y - food_y)
     other_distance = abs(other_head_x - food_x) + abs(other_head_y - food_y)
 
-    # 检查是否追不上食物
     if my_distance > other_distance:
-        # 向中间移动的逻辑
+        # 修改后的边界检查逻辑
         if head_x < SCREEN_WIDTH // 2 and direction != 'LEFT':
-            if (new_positions['RIGHT'] not in other_snake_pos and
-                    new_positions['RIGHT'] != other_next_pos and
-                    new_positions['RIGHT'] not in snake_pos[1:] and
-                    0 <= new_positions['RIGHT'][0] < SCREEN_WIDTH and
-                    0 <= new_positions['RIGHT'][1] < SCREEN_HEIGHT):
+            if (new_positions['RIGHT'][0] + snake_block_size <= SCREEN_WIDTH and
+                new_positions['RIGHT'] not in other_snake_pos and
+                new_positions['RIGHT'] != other_next_pos and
+                new_positions['RIGHT'] not in snake_pos[1:]):
                 possible_directions.append('RIGHT')
         elif head_x > SCREEN_WIDTH // 2 and direction != 'RIGHT':
-            if (new_positions['LEFT'] not in other_snake_pos and
-                    new_positions['LEFT'] != other_next_pos and
-                    new_positions['LEFT'] not in snake_pos[1:] and
-                    0 <= new_positions['LEFT'][0] < SCREEN_WIDTH and
-                    0 <= new_positions['LEFT'][1] < SCREEN_HEIGHT):
+            if (new_positions['LEFT'][0] >= 0 and
+                new_positions['LEFT'] not in other_snake_pos and
+                new_positions['LEFT'] != other_next_pos and
+                new_positions['LEFT'] not in snake_pos[1:]):
                 possible_directions.append('LEFT')
         if not possible_directions:
-            # 如果不能水平移动，尝试垂直移动
             if head_y < SCREEN_HEIGHT // 2 and direction != 'UP':
-                if (new_positions['DOWN'] not in other_snake_pos and
-                        new_positions['DOWN'] != other_next_pos and
-                        new_positions['DOWN'] not in snake_pos[1:] and
-                        0 <= new_positions['DOWN'][0] < SCREEN_WIDTH and
-                        0 <= new_positions['DOWN'][1] < SCREEN_HEIGHT):
+                if (new_positions['DOWN'][1] + snake_block_size <= SCREEN_HEIGHT and
+                    new_positions['DOWN'] not in other_snake_pos and
+                    new_positions['DOWN'] != other_next_pos and
+                    new_positions['DOWN'] not in snake_pos[1:]):
                     possible_directions.append('DOWN')
             elif head_y > SCREEN_HEIGHT // 2 and direction != 'DOWN':
-                if (new_positions['UP'] not in other_snake_pos and
-                        new_positions['UP'] != other_next_pos and
-                        new_positions['UP'] not in snake_pos[1:] and
-                        0 <= new_positions['UP'][0] < SCREEN_WIDTH and
-                        0 <= new_positions['UP'][1] < SCREEN_HEIGHT):
+                if (new_positions['UP'][1] >= 0 and
+                    new_positions['UP'] not in other_snake_pos and
+                    new_positions['UP'] != other_next_pos and
+                    new_positions['UP'] not in snake_pos[1:]):
                     possible_directions.append('UP')
     else:
-        # 正常追食物的逻辑
+        # 正常追食物时的修改
         if head_x < food_x and direction != 'LEFT':
-            if (new_positions['RIGHT'] not in other_snake_pos and
-                    new_positions['RIGHT'] != other_next_pos and
-                    new_positions['RIGHT'] not in snake_pos[1:] and
-                    0 <= new_positions['RIGHT'][0] < SCREEN_WIDTH and
-                    0 <= new_positions['RIGHT'][1] < SCREEN_HEIGHT):
+            if (new_positions['RIGHT'][0] + snake_block_size <= SCREEN_WIDTH and
+                new_positions['RIGHT'] not in other_snake_pos and
+                new_positions['RIGHT'] != other_next_pos and
+                new_positions['RIGHT'] not in snake_pos[1:]):
                 possible_directions.append('RIGHT')
         if head_x > food_x and direction != 'RIGHT':
-            if (new_positions['LEFT'] not in other_snake_pos and
-                    new_positions['LEFT'] != other_next_pos and
-                    new_positions['LEFT'] not in snake_pos[1:] and
-                    0 <= new_positions['LEFT'][0] < SCREEN_WIDTH and
-                    0 <= new_positions['LEFT'][1] < SCREEN_HEIGHT):
+            if (new_positions['LEFT'][0] >= 0 and
+                new_positions['LEFT'] not in other_snake_pos and
+                new_positions['LEFT'] != other_next_pos and
+                new_positions['LEFT'] not in snake_pos[1:]):
                 possible_directions.append('LEFT')
         if head_y < food_y and direction != 'UP':
-            if (new_positions['DOWN'] not in other_snake_pos and
-                    new_positions['DOWN'] != other_next_pos and
-                    new_positions['DOWN'] not in snake_pos[1:] and
-                    0 <= new_positions['DOWN'][0] < SCREEN_WIDTH and
-                    0 <= new_positions['DOWN'][1] < SCREEN_HEIGHT):
+            if (new_positions['DOWN'][1] + snake_block_size <= SCREEN_HEIGHT and
+                new_positions['DOWN'] not in other_snake_pos and
+                new_positions['DOWN'] != other_next_pos and
+                new_positions['DOWN'] not in snake_pos[1:]):
                 possible_directions.append('DOWN')
         if head_y > food_y and direction != 'DOWN':
-            if (new_positions['UP'] not in other_snake_pos and
-                    new_positions['UP'] != other_next_pos and
-                    new_positions['UP'] not in snake_pos[1:] and
-                    0 <= new_positions['UP'][0] < SCREEN_WIDTH and
-                    0 <= new_positions['UP'][1] < SCREEN_HEIGHT):
+            if (new_positions['UP'][1] >= 0 and
+                new_positions['UP'] not in other_snake_pos and
+                new_positions['UP'] != other_next_pos and
+                new_positions['UP'] not in snake_pos[1:]):
                 possible_directions.append('UP')
 
     if possible_directions:

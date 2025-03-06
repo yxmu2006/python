@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>上传 Excel 生成动视图</title>
+    <!-- 引入 SheetJS 用于处理 Excel 文件 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- 引入 Chart.js 用于生成图表 -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f4f4;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        #controls {
+            margin-top: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        #excelFileInput,
+        #chartTypeSelect {
+            padding: 10px;
+            margin: 0 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        #myChart {
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            width: 66.67%; /* 2/3 of the browser width */
+            max-width: 1024px; /* Optional: Set a maximum width */
+            height: auto;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- 用于显示图表的画布 -->
+    <canvas id="myChart"></canvas>
+    <!-- 操作控件 -->
+    <div id="controls">
+        <!-- 上传文件的输入框 -->
+        <input type="file" id="excelFileInput" accept=".xlsx, .xls">
+        <!-- 选择图表类型的下拉框 -->
+        <select id="chartTypeSelect">
+            <option value="bar">柱状图</option>
+            <option value="line">折线图</option>
+            <option value="pie">饼图</option>
+        </select>
+    </div>
+
+    <script>
+        const fileInput = document.getElementById('excelFileInput');
+        const chartTypeSelect = document.getElementById('chartTypeSelect');
+        const ctx = document.getElementById('myChart').getContext('2d');
+        let myChart;
+
+        // 更美观的颜色调色板
+        const colorPalette = [
+            'rgba(255, 99, 132, 0.8)',
+            'rgba(54, 162, 235, 0.8)',
+            'rgba(255, 205, 86, 0.8)',
+            'rgba(75, 192, 192, 0.8)',
+            'rgba(153, 102, 255, 0.8)',
+            'rgba(255, 159, 64, 0.8)'
+        ];
+
+        fileInput.addEventListener('change', function (e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    try {
+                        const data = new Uint8Array(e.target.result);
+                        const workbook = XLSX.read(data, { type: 'array' });
+                        const firstSheetName = workbook.SheetNames[0];
+                        const worksheet = workbook.Sheets[firstSheetName];
+                        const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
+                        // 简单示例：假设第一列是标签，第二列是数据
+                        const labels = jsonData.map(row => Object.values(row)[0]);
+                        const dataValues = jsonData.map(row => Object.values(row)[1]);
+
+                        // 生成丰富的颜色数组
+                        const colors = [];
+                        for (let i = 0; i < dataValues.length; i++) {
+                            colors.push(colorPalette[i % colorPalette.length]);
+                        }
+
+                        if (myChart) {
+                            myChart.destroy();
+                        }
+
+                        myChart = new Chart(ctx, {
+                            type: chartTypeSelect.value,
+                            data: {
+                                labels: labels,
+                                datasets: [{
+                                    label: '数据',
+                                    data: dataValues,
+                                    backgroundColor: colors,
+                                    borderColor: colors.map(color => color.replace('0.8', '1')),
+                                    borderWidth: 2
+                                }]
+                            },
+                            options: {
+                                responsive: true, // 启用响应式
+                                maintainAspectRatio: false, // 不保持宽高比
+                                scales: {
+                                    x: {
+                                        grid: {
+                                            color: 'rgba(0, 0, 0, 0.1)'
+                                        },
+                                        ticks: {
+                                            color: '#333'
+                                        }
+                                    },
+                                    y: {
+                                        grid: {
+                                            color: 'rgba(0, 0, 0, 0.1)'
+                                        },
+                                        ticks: {
+                                            color: '#333'
+                                        }
+                                    }
+                                },
+                                plugins: {
+                                    legend: {
+                                        labels: {
+                                            color: '#333'
+                                        }
+                                    },
+                                    title: {
+                                        display: true,
+                                        text: 'Excel 数据可视化',
+                                        color: '#333',
+                                        font: {
+                                            size: 20
+                                        }
+                                    }
+                                }
+                            }
+                        });
+                    } catch (error) {
+                        console.error('文件处理出错:', error);
+                    }
+                };
+                reader.onerror = function () {
+                    console.error('文件读取出错:', reader.error);
+                };
+                reader.readAsArrayBuffer(file);
+            }
+        });
+
+        chartTypeSelect.addEventListener('change', function () {
+            if (myChart) {
+                myChart.destroy();
+                const file = fileInput.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function (e) {
+                        try {
+                            const data = new Uint8Array(e.target.result);
+                            const workbook = XLSX.read(data, { type: 'array' });
+                            const firstSheetName = workbook.SheetNames[0];
+                            const worksheet = workbook.Sheets[firstSheetName];
+                            const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
+                            const labels = jsonData.map(row => Object.values(row)[0]);
+                            const dataValues = jsonData.map(row => Object.values(row)[1]);
+
+                            // 生成丰富的颜色数组
+                            const colors = [];
+                            for (let i = 0; i < dataValues.length; i++) {
+                                colors.push(colorPalette[i % colorPalette.length]);
+                            }
+
+                            myChart = new Chart(ctx, {
+                                type: chartTypeSelect.value,
+                                data: {
+                                    labels: labels,
+                                    datasets: [{
+                                        label: '数据',
+                                        data: dataValues,
+                                        backgroundColor: colors,
+                                        borderColor: colors.map(color => color.replace('0.8', '1')),
+                                        borderWidth: 2
+                                    }]
+                                },
+                                options: {
+                                    responsive: true, // 启用响应式
+                                    maintainAspectRatio: false, // 不保持宽高比
+                                    scales: {
+                                        x: {
+                                            grid: {
+                                                color: 'rgba(0, 0, 0, 0.1)'
+                                            },
+                                            ticks: {
+                                                color: '#333'
+                                            }
+                                        },
+                                        y: {
+                                            grid: {
+                                                color: 'rgba(0, 0, 0, 0.1)'
+                                            },
+                                            ticks: {
+                                                color: '#333'
+                                            }
+                                        }
+                                    },
+                                    plugins: {
+                                        legend: {
+                                            labels: {
+                                                color: '#333'
+                                            }
+                                        },
+                                        title: {
+                                            display: true,
+                                            text: 'Excel 数据可视化',
+                                            color: '#333',
+                                            font: {
+                                                size: 20
+                                            }
+                                        }
+                                    }
+                                }
+                            });
+                        } catch (error) {
+                            console.error('文件处理出错:', error);
+                        }
+                    };
+                    reader.onerror = function () {
+                        console.error('文件读取出错:', reader.error);
+                    };
+                    reader.readAsArrayBuffer(file);
+                }
+            }
+        });
+    </script>
+</body>
+
+</html>

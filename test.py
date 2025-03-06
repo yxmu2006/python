@@ -93,7 +93,7 @@ def main():
 
         pygame.display.flip()
         clock.tick(snake_speed)
-    
+
 
 if __name__ == "__main__":
    main()
